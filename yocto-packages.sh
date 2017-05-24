@@ -54,13 +54,13 @@ usage()
 
 check_distro ()
 {
-    printf "\nDetecting distribution...\n"
+    printf "\nDetecting distribution... "
 
     # lsb_release might not work on all distros, so check for "command not found" error
     lsb_release -is 2> /dev/null
     if [ "$?" == "127" ]; then  # exit code 127 = command not found
-         echo "your Linux distribution was not detected."        
-         echo "Try re-running with the -d option, or -h for help."
+         printf "\nYour Linux distribution was not detected."
+         printf "\nTry re-running with the -d option, or -h for help."
          exit 1
     else
         DISTRO=$(lsb_release -is)
@@ -88,7 +88,9 @@ check_package ()
             fi
         ;;
         "OpenSUSE" | "openSUSE" | "openSUSE project")
-            if `zypper info $1 | grep "Installed[[:space:]]\{2,\}:[[:space:]]Yes" > /dev/null`; then
+            # checks for both openSUSE 42.x and 13.x; zypper info reports differently
+            if `zypper info $1 | grep "Installed[[:space:]]\{2,\}:[[:space:]]Yes" > /dev/null` ||
+               `zypper info $1 | grep "Installed: Yes" > /dev/null`; then
                 printf "installed\n"
             else
                 printf "not installed\n"
