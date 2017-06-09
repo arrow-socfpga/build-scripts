@@ -132,7 +132,6 @@ update_repo ()
 install_package ()
 {
     if $install; then
-        update_repo
         printf "Installing $1... "
         case "$DISTRO" in
             "Ubuntu" | "Debian")
@@ -196,6 +195,10 @@ if $distro_check ; then
     check_distro
 else
     echo "Skipping distribution detection... user specified ${DISTRO}"
+fi
+
+if $install ; then
+    update_repo
 fi
 
 case "$DISTRO" in
