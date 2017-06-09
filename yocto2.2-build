@@ -72,9 +72,13 @@ check_disk_space()
     # assuming OK to work in GB due to large image and HDD sizes
     FREE_SPACE=`df --block-size=1G $PWD | awk '/[0-9]%/{print $(NF-2)}'`
 
-    printf "\nChecking available disk space... "
+    echo -e ${GREEN}
+    printf "\n*******************************************************************\n"
+    printf " Checking available disk space... \n"
+    printf "*******************************************************************\n"
+    echo -e ${NC}
     if [ "$FREE_SPACE" -lt "$IMG_SIZE" ]; then
-        printf "\nAvailable: ${FREE_SPACE} GB\n"
+        printf "Available: ${FREE_SPACE} GB\n"
         printf "Required: ${IMG_SIZE} GB\n"
         printf "Please free at least $(($IMG_SIZE - $FREE_SPACE)) GB and then rerun the build script.\n"
         exit 1
@@ -89,61 +93,65 @@ FREE_SPACE=`df --block-size=1G $PWD | awk '/[0-9]%/{print $(NF-2)}'`
 # user's name and e-mail.
 check_git_config()
 {
-printf "\nChecking git global configuration... "
+    echo -e ${GREEN}
+    printf "\n*******************************************************************\n"
+    printf " Checking git global configuration... \n"
+    printf "*******************************************************************\n"
+    echo -e ${NC}
 
-if [[ ! $(git config user.name) || ! $(git config user.email) ]]; then
-    printf "\n\nIt appears that git has not yet been configured with"
-    printf "\nyour name or e-mail address (this is required for repo)."
-    printf "\nI can set this up for you.\n"
-    correct=false
-    fix_name=false
-    fix_email=false
-    while ! $correct; do
-        # don't accept blank name
-        while [[ -z $GIT_NAME ]] || $fix_name; do
-            printf "Please enter your first and last name (e.g. John Doe): "
-            read GIT_NAME
-            fix_name=false
+    if [[ ! $(git config user.name) || ! $(git config user.email) ]]; then
+        printf "\nIt appears that git has not yet been configured with"
+        printf "\nyour name or e-mail address (this is required for repo)."
+        printf "\nI can set this up for you.\n"
+        correct=false
+        fix_name=false
+        fix_email=false
+        while ! $correct; do
+            # don't accept blank name
+            while [[ -z $GIT_NAME ]] || $fix_name; do
+                printf "Please enter your first and last name (e.g. John Doe): "
+                read GIT_NAME
+                fix_name=false
+            done
+            # don't accept blank e-mail
+            while [[ -z $GIT_EMAIL ]] || $fix_email; do
+                printf "Please enter your e-mail address (e.g. username@domain): "
+                read GIT_EMAIL
+                fix_email=false
+            done
+            # verify entries
+            printf "\nYou have entered your name as: ${GIT_NAME}"
+            printf "\nYou have entered your e-mail as: ${GIT_EMAIL}"
+            printf "\n\nIs this correct? "
+            read -r -p "[Y to proceed / N to fix Name / E to fix e-mail / B to fix both Name and e-mail] " correct
+                case "$correct" in
+                    [yY][eE][sS]|[yY])
+                        correct=true
+                    ;;
+                    [nN])
+                        correct=false
+                        fix_name=true
+                    ;;
+                    [eE])
+                        correct=false
+                        fix_email=true
+                    ;;
+                    [bB])
+                        correct=false
+                        fix_name=true
+                        fix_email=true
+                    ;;
+                    *)
+                        correct=false
+                        fix_name=true
+                        fix_email=true
+                esac
         done
-        # don't accept blank e-mail
-        while [[ -z $GIT_EMAIL ]] || $fix_email; do
-            printf "Please enter your e-mail address (e.g. username@domain): "
-            read GIT_EMAIL
-            fix_email=false
-        done
-        # verify entries
-        printf "\nYou have entered your name as: ${GIT_NAME}"
-        printf "\nYou have entered your e-mail as: ${GIT_EMAIL}"
-        printf "\n\nIs this correct? "
-        read -r -p "[Y to proceed / N to fix Name / E to fix e-mail / B to fix both Name and e-mail] " correct
-            case "$correct" in
-                [yY][eE][sS]|[yY])
-                    correct=true
-                ;;
-                [nN])
-                    correct=false
-                    fix_name=true
-                ;;
-                [eE])
-                    correct=false
-                    fix_email=true
-                ;;
-                [bB])
-                    correct=false
-                    fix_name=true
-                    fix_email=true
-                ;;
-                *)
-                    correct=false
-                    fix_name=true
-                    fix_email=true
-            esac
-    done
-    git config --global user.name "$GIT_NAME"
-    git config --global user.email "$GIT_EMAIL"
-else
-    printf "OK\n"
-fi
+        git config --global user.name "$GIT_NAME"
+        git config --global user.email "$GIT_EMAIL"
+    else
+        printf "OK\n"
+    fi
 }
 
 #################################################
@@ -277,7 +285,7 @@ if [ ! -d "$BUILD_DIR" ]; then
 else
     printf "\n${BUILD_DIR} directory already exists.\n"
     printf "Maybe you intended to run this in another directory.\n"
-    read -r -p "Continue from previous build? [y/n] " response
+    read -r -p "Continue from previous build? [y/N] " response
     case "$response" in
         [yY][eE][sS]|[yY]) 
             printf "\n"
@@ -317,12 +325,11 @@ printf " should run the ${NC}yocto-packages.sh${GREEN} script with root privileg
 printf " instructed on the rocketboards.org page to check for and install\n"
 printf " any missing build tools and packages.\n"
 printf "*******************************************************************\n"
-printf "\n"
 echo -e ${NC}
 
 #echo -e ${WHITE}
 echo "Verify build configuration.  Exit and rerun script with --help to make changes."
-read -r -p "Continue? [y/n] " response
+read -r -p "Continue? [y/N] " response
 case "$response" in
     [yY][eE][sS]|[yY]) 
         printf "\n"
@@ -343,7 +350,7 @@ if [ ! -f ~/bin/repo ]; then
     echo "If you know you have it and it is in your PATH then"
     echo "you can skip this.  Otherwise, if you're not sure, I"
     echo "can install it for you."
-    read -r -p "[Y to install / N to skip] " response
+    read -r -p "[y to install / N to skip] " response
     case "$response" in
         [yY][eE][sS]|[yY])
             printf "Installing repo in ~/bin... \n\n"
@@ -474,9 +481,14 @@ if bitbake $BUILD_IMG ; then
     printf "\n"
     echo -e ${NC}
 else
-    echo " It looks like something went wrong with bitbake.  Either you manually"
-    echo " interrupted the build process or perhaps a required build tool is    "
-    echo " still missing that I was not able to detect for your Linux           "
-    echo " distribution.  Please refer to the Yocto Project Reference Manual,   "
-    echo " \"Required Packages for Host Development System\" section.           " 
+    echo -e ${ORANGE}
+    echo "*******************************************************************"
+    echo " It looks like something went wrong with bitbake.  Either you      "
+    echo " manually interrupted the build process or bitbake encountered an  "
+    echo " an error.  Or it is possible that a required build tool is still  "
+    echo " missing that I was not able to detect for your Linux distribution."
+    echo " Please refer to the Yocto Project Reference Manual, \"Required    "
+    echo " Packages for Host Development System\" section.                   "
+    echo "*******************************************************************"
+    echo -e ${NC}
 fi
