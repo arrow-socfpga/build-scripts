@@ -103,9 +103,36 @@ check_package ()
     esac
 }
 
+update_repo ()
+{
+    printf "Updating package repository list... "
+    case "$DISTRO" in
+        "Ubuntu" | "Debian")
+            if `apt-get update > /dev/null`; then
+                printf "done\n"
+            fi
+        ;;
+# this step is only needed for Ubuntu/Debian
+#        "Fedora" | "CentOS")
+#            if `yum check-update > /dev/null`; then
+#                printf "done\n"
+#            fi
+#        ;;
+#        "OpenSUSE" | "openSUSE" | "openSUSU project")
+#            if `zypper refresh > /dev/null`; then
+#                printf "done\n"
+#            fi
+#        ;;
+        *)
+            exit 1
+        ;;
+    esac
+}
+
 install_package ()
 {
     if $install; then
+        update_repo
         printf "Installing $1... "
         case "$DISTRO" in
             "Ubuntu" | "Debian")
