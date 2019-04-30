@@ -29,10 +29,19 @@
 # v1.0
 #   - initial release for Yocto Project 2.2 release
 #
-# 3/30/2017 - tested with Ubuntu 16.04
-# 3/30/2017 - tested with Ubuntu 14.04
-# 5/11/2017 - tested with CentOS 7-1611
-# 5/19/2017 - tested with openSUSE 42.2
+# 03/30/2017 - tested with Ubuntu 16.04
+# 03/30/2017 - tested with Ubuntu 14.04
+# 05/11/2017 - tested with CentOS 7-1611
+# 05/19/2017 - tested with openSUSE 42.2
+#
+# v1.1
+#
+# 11/06/2018 - updated Ubuntu/Debian Essentials package list for Yocto Project 2.5.1
+#            - tested with Ubuntu 18.04 (not yet officially supported)
+#
+# 04/30/2018 - updated all Essentials package list for Yocto Project 2.6.2
+#            - tested with Ubuntu 18.04 (supported as stated in Yocto 2.6.2 documentation)
+#
 
 #################################################
 # Functions
@@ -214,6 +223,14 @@ case "$DISTRO" in
         check_package 'build-essential'
         check_package 'chrpath'
         check_package 'socat'
+        check_package 'cpio'
+        check_package 'python'
+        check_package 'python3'
+        check_package 'python3-pip'
+        check_package 'python3-pexpect'
+        check_package 'xz-utils'
+        check_package 'debianutils'
+        check_package 'iputils-ping'
         # Graphics or Eclipse support
         check_package 'libsdl1.2-dev'
         check_package 'xterm'
@@ -247,6 +264,13 @@ case "$DISTRO" in
         check_package 'perl-Thread-Queue'
         check_package 'perl-bignum'
         check_package 'socat'
+        check_package 'python3-pexpect'
+        check_package 'which'
+        check_package 'file'
+        check_package 'cpio'
+        check_package 'python'
+        check_package 'python3-pip'
+        check_package 'xz'
         # Graphics or Eclipse support
         check_package 'SDL-devel'
         check_package 'xterm'
@@ -255,6 +279,7 @@ case "$DISTRO" in
     ;;
     "OpenSUSE" | "openSUSE" | "openSUSE project")
         # Essentials
+        check_package 'python'
         check_package 'gcc' 
         check_package 'gcc-c++'
         check_package 'git'
@@ -267,6 +292,13 @@ case "$DISTRO" in
         check_package 'python-curses'
         check_package 'patch'
         check_package 'socat'
+        check_package 'python3'
+        check_package 'python3-curses'
+        check_package 'tar'
+        check_package 'python3-pip'
+        check_package 'python3-pexpect'
+        check_package 'xz'
+        check_package 'which'
         # Graphics or Eclipse support
         check_package 'libSDL-devel'
         check_package 'xterm'
@@ -275,6 +307,7 @@ case "$DISTRO" in
     ;;
     "CentOS")
         # Essentials
+        check_package 'epel-release'
         check_package 'gawk' 
         check_package 'make'
         check_package 'wget'
@@ -298,6 +331,8 @@ case "$DISTRO" in
         check_package 'perl-Data-Dumper'
         check_package 'perl-Text-ParseWords'
         check_package 'perl-Thread-Queue'
+        check_package 'python34-pip'
+        check_package 'xz'
         # Graphics or Eclipse support
         check_package 'SDL-devel'
         check_package 'xterm'
