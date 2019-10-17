@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # MIT License
-# Copyright (c) 2017 Arrow Electronics
+# Copyright (c) 2019 Arrow Electronics
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +30,13 @@
 #   - initial release for Arrow SoCKit GSRD v16.1 release
 #
 # TODO: add dependecy checking to this sript (currently in yocto-packages.sh because the installation
-#       of package, if necessary, requires root privileges); this script cannot run as root
+#       of packages, if necessary, requires root privileges); this script cannot run as root
 # TODO: add parameters to allow for more build customization (u-boot & kernel version, etc)
 #       pass arguments to variables that are written to Yocto config files
 # TODO: add better flow control: if BUILD_DIR exists then skip the setup and go right to bitbake
+# 
+# 19.1
+#   - initial release for Arrow SoCKit GSRD v19.1 release
 #
 
 #################################################
@@ -42,18 +45,23 @@
 
 usage()
 {
-    echo "Usage: ./yocto-build-sockit.sh [options]"
-    echo "Yocto build script for Arrow SoCKit"
+    echo "Usage: ./yocto2.2-build [options]"
+    echo "Yocto 2.2 build script for"
     echo "Options:"
+    echo "  -b, --board [board name]       Target development board.  Currently supported boards:"
+    echo "                                   arrow-sockit"
+    echo ""
     echo "  -d, --directory [dir name]     Build directory name"
     echo "                                 If not specified, defaults to"
-    echo "                                 angstrom-v2016.12-yocto2.2"
+    echo "                                 yocto2.7"
     echo ""
     echo "  -i, --image [image name]       Only these images names are valid:"
-    echo "                                   arrow-sockit-xfce-image (XFCE graphical desktop, default if image not specified)"
-    echo "                                   arrow-sockit-console-image (console applications only)"
+    echo "                                   xfce (XFCE graphical desktop, default if image not specified)"
+    echo "                                   console (console applications only)"
     echo "                                   uboot (builds U-Boot bootloader only)"
     echo "                                   kernel (builds linux kernel only)"
+    echo ""
+    echo "  -m, --menu                     Run the script in interactive menu mode."
     echo ""
     echo "  -h, --help                     Display this help message and exit."
     echo ""
@@ -66,9 +74,13 @@ check_disk_space()
     # assuming OK to work in GB due to large image and HDD sizes
     FREE_SPACE=`df --block-size=1G $PWD | awk '/[0-9]%/{print $(NF-2)}'`
 
-    printf "\nChecking available disk space... "
+    echo -e ${GREEN}
+    printf "\n*******************************************************************\n"
+    printf " Checking available disk space... \n"
+    printf "*******************************************************************\n"
+    echo -e ${NC}
     if [ "$FREE_SPACE" -lt "$IMG_SIZE" ]; then
-        printf "\nAvailable: ${FREE_SPACE} GB\n"
+        printf "Available: ${FREE_SPACE} GB\n"
         printf "Required: ${IMG_SIZE} GB\n"
         printf "Please free at least $(($IMG_SIZE - $FREE_SPACE)) GB and then rerun the build script.\n"
         exit 1
@@ -77,7 +89,71 @@ check_disk_space()
     fi
 
 FREE_SPACE=`df --block-size=1G $PWD | awk '/[0-9]%/{print $(NF-2)}'`
+}
 
+# On new installations of git, make sure it has been configured with
+# user's name and e-mail.
+check_git_config()
+{
+    echo -e ${GREEN}
+    printf "\n*******************************************************************\n"
+    printf " Checking git global configuration... \n"
+    printf "*******************************************************************\n"
+    echo -e ${NC}
+
+    if [[ ! $(git config user.name) || ! $(git config user.email) ]]; then
+        printf "\nIt appears that git has not yet been configured with"
+        printf "\nyour name or e-mail address (this is required for repo)."
+        printf "\nI can set this up for you.\n"
+        correct=false
+        fix_name=false
+        fix_email=false
+        while ! $correct; do
+            # don't accept blank name
+            while [[ -z $GIT_NAME ]] || $fix_name; do
+                printf "Please enter your first and last name (e.g. John Doe): "
+                read GIT_NAME
+                fix_name=false
+            done
+            # don't accept blank e-mail
+            while [[ -z $GIT_EMAIL ]] || $fix_email; do
+                printf "Please enter your e-mail address (e.g. username@domain): "
+                read GIT_EMAIL
+                fix_email=false
+            done
+            # verify entries
+            printf "\nYou have entered your name as: ${GIT_NAME}"
+            printf "\nYou have entered your e-mail as: ${GIT_EMAIL}"
+            printf "\n\nIs this correct? "
+            read -r -p "[Y to proceed / N to fix Name / E to fix e-mail / B to fix both Name and e-mail] " correct
+                case "$correct" in
+                    [yY][eE][sS]|[yY])
+                        correct=true
+                    ;;
+                    [nN])
+                        correct=false
+                        fix_name=true
+                    ;;
+                    [eE])
+                        correct=false
+                        fix_email=true
+                    ;;
+                    [bB])
+                        correct=false
+                        fix_name=true
+                        fix_email=true
+                    ;;
+                    *)
+                        correct=false
+                        fix_name=true
+                        fix_email=true
+                esac
+        done
+        git config --global user.name "$GIT_NAME"
+        git config --global user.email "$GIT_EMAIL"
+    else
+        printf "OK\n"
+    fi
 }
 
 #################################################
@@ -85,14 +161,15 @@ FREE_SPACE=`df --block-size=1G $PWD | awk '/[0-9]%/{print $(NF-2)}'`
 #################################################
 
 # Configuration variables
-SCRIPT_VERSION="Arrow SoCKit GSRD v16.1 Yocto Build Script"
+SCRIPT_VERSION="Yocto 2.7 Build Script"
 SHORT_VER=16.1
-BUILD_DIR=angstrom-v2016.12-yocto2.2
-GHRD_BRANCH=arrow-sockit-1080p-16.1
+BOARD=arrow-sockit
+BOARD_LONG="Arrow SoCKit Development Kit"
+BUILD_DIR=yocto2.7
+GHRD_BRANCH=
 UBOOT_VER=2017.03
-KERNEL_VER=4.1.33-ltsi
-DISTRO_VER="Angstrom v2016.12"
-BUILD_IMG=arrow-sockit-xfce-image
+KERNEL_VER=4.14.130-ltsi
+BUILD_IMG=console
 IMG_SIZE=75
 
 # Color text formatting
@@ -117,6 +194,10 @@ while [ "$1" != "" ]; do
             echo "${SCRIPT_VERSION}"
             exit
         ;;
+        -b | --board)
+            shift
+            BOARD=$1
+        ;;
         -d | --directory)
             shift
             BUILD_DIR=$1
@@ -129,12 +210,28 @@ while [ "$1" != "" ]; do
             usage
             exit
         ;;
+        -m | --menu)
+            echo "The menu feature is not yet implemented"
+            exit
+        ;;
         *)
             usage
             exit 1
     esac
     shift
 done
+
+# check board name
+case $BOARD in
+    arrow-sockit)
+        BOARD_LONG="Arrow SoCKit Development Kit"
+    ;;
+    *)
+        echo ""
+        echo "Invalid board name specified.  Use --help for valid image names."
+        echo ""
+        exit 1
+esac
 
 # set build parameter variables based on image specified
 # IMG_SIZE = size in bytes / (1024 * 1,000,000)
@@ -148,10 +245,12 @@ done
 # releases of the script as this was more of an acedemic exercise
 
 case $BUILD_IMG in
-    arrow-sockit-xfce-image)
+    xfce)
+        BUILD_IMG=$BOARD-xfce-image
         IMG_SIZE=75
     ;;
-    arrow-sockit-console-image)
+    console)
+        BUILD_IMG=$BOARD-console-image
         IMG_SIZE=35
     ;;
     uboot)
@@ -159,14 +258,12 @@ case $BUILD_IMG in
         IMG_SIZE=11
         KERNEL_VER=NA
         GHRD_BRANCH=NA
-        DISTRO_VER=NA
     ;;
     kernel)
         BUILD_IMG=virtual/kernel
         IMG_SIZE=13
         UBOOT_VER=NA
         GHRD_BRANCH=NA
-        DISTRO_VER=NA
     ;;
     *)
         echo ""
@@ -184,7 +281,7 @@ if [ ! -d "$BUILD_DIR" ]; then
 else
     printf "\n${BUILD_DIR} directory already exists.\n"
     printf "Maybe you intended to run this in another directory.\n"
-    read -r -p "Continue from previous build? [y/n] " response
+    read -r -p "Continue from previous build? [y/N] " response
     case "$response" in
         [yY][eE][sS]|[yY]) 
             printf "\n"
@@ -202,14 +299,14 @@ export BB_ENV_EXTRAWHITE="$BB_ENV_EXTRAWHITE IMAGE_ROOTFS_EXTRA_SPACE"
 # print introduction, ask for confirmation
 echo -e ${GREEN}
 printf "*******************************************************************\n"
-printf " This is the Yocto 2.2 build script for the Arrow SoCKit Dev. Kit\n"
+printf " This is the Yocto 2.2 build script for the\n"
+printf " ${BOARD_LONG}\n"
 printf " Current build configuration:\n"
 #printf " Run script with --help to view customizable perameters.\n"
-printf "  - SoCKit GSRD release:    ${BLUE}${SHORT_VER}${GREEN}\n"
-printf "  - SoCKit GHRD branch:     ${BLUE}${GHRD_BRANCH}${GREEN}\n"
+printf "  - GSRD release:           ${BLUE}${SHORT_VER}${GREEN}\n"
+printf "  - GHRD branch:            ${BLUE}${GHRD_BRANCH}${GREEN}\n"
 printf "  - U-Boot version:         ${BLUE}${UBOOT_VER}${GREEN}\n"
 printf "  - Kernel version:         ${BLUE}${KERNEL_VER}${GREEN}\n"
-printf "  - Distro version:         ${BLUE}${DISTRO_VER}${GREEN}\n"
 printf "  - Build image:            ${BLUE}${BUILD_IMG}${GREEN}\n"
 printf "      disk space required:  ${BLUE}${IMG_SIZE} GB${GREEN}\n"
 printf "  - top build directory:    ${BLUE}${BUILD_DIR}${GREEN}\n"
@@ -223,12 +320,11 @@ printf " should run the ${NC}yocto-packages.sh${GREEN} script with root privileg
 printf " instructed on the rocketboards.org page to check for and install\n"
 printf " any missing build tools and packages.\n"
 printf "*******************************************************************\n"
-printf "\n"
 echo -e ${NC}
 
 #echo -e ${WHITE}
 echo "Verify build configuration.  Exit and rerun script with --help to make changes."
-read -r -p "Continue? [y/n] " response
+read -r -p "Continue? [y/N] " response
 case "$response" in
     [yY][eE][sS]|[yY]) 
         printf "\n"
@@ -239,93 +335,41 @@ case "$response" in
 esac
 #echo -e ${NC}
 
-# create the BUILD_DIR
-mkdir -p $BUILD_DIR && cd $BUILD_DIR
-
-# confirm installation of repo, look in the expected location
-#echo -e ${WHITE}
-if [ ! -f ~/bin/repo ]; then
-    echo "It appears that the repo script is not installed."
-    echo "If you know you have it then skip this.  Otherwise,"
-    echo "if you're not sure, I can install it for you."
-    read -r -p "[Y to install / N to skip] " response
-    case "$response" in
-        [yY][eE][sS]|[yY])
-            printf "Installing repo in ~/bin... \n\n"
-            if `mkdir -p ~/bin &&
-               PATH=~/bin:$PATH &&
-               curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo &&
-               chmod a+x ~/bin/repo > /dev/null`; then
-               printf "\ndone\n"
-            else
-               printf "${RED}ERROR: repo installation failed${NC}\n"
-               exit 1
-            fi
-        ;;
-        *)
-            printf "Skipping repo install\n"
-    esac
-fi
-#echo -e ${NC}
+check_git_config
 
 # start a build time counter
 SECONDS=0
 
+# create the BUILD_DIR
+mkdir -p $BUILD_DIR && cd $BUILD_DIR
+
 # start the build process and echo what we are doing
 echo -e ${GREEN}
 echo "*******************************************************************"
-echo " Cloning Angstrom repo...                                          "
+echo " Cloning Yocto and meta-altera                                     "
 echo "*******************************************************************"
 echo -e ${NC}
 
-# Clone Angstrom repo
-if repo init -u git://github.com/Angstrom-distribution/angstrom-manifest -b angstrom-v2016.12-yocto2.2 ; then
-    :
-else
-    echo -e ${RED}
-    echo "ERROR: Cloning Angstrom repo failed."
-    echo -e ${ORANGE}
-    echo "Are you sure you have repo installed?"
-    echo "Maybe you need to run yocto-pacakges.sh first."
-    echo -e ${NC}
-    exit 1
-fi
+# Clone yocto repo
+
+git clone -b warrior git://git.yoctoproject.org/poky.git
+
+# Clone meta-altera repo
+
+git clone -b master git://github.com/kraj/meta-altera.git
+
+# Clone meta-arrow-sockit repo
+
+git clone -b sockit-gsrd-19.1 git://github.com/arrow-socfpga/meta-arrow-sockit.git
+
 
 echo -e ${GREEN}
 echo "*******************************************************************"
-echo " Configuring local manifests...                                    "
+echo " Prepare and configure yocto Poky                                  "
 echo "*******************************************************************"
 echo -e ${NC}
 
-# this is where our custom layers are specified for the repo tool
-if wget https://raw.githubusercontent.com/arrow-socfpga/build-scripts/gsrd-16.1/arrow-sockit_manifest.xml ; then
-    :
-else
-    echo -e ${RED}
-    echo "ERROR: failed to fetch manifest file"
-    echo -e ${NC}
-    exit 1
-fi
-
-mkdir -p .repo/local_manifests
-mv arrow-sockit_manifest.xml .repo/local_manifests
-#cp ../../arrow-sockit_manifest.xml .repo/local_manifests
-
-echo -e ${GREEN}
-echo "*******************************************************************"
-echo " Syncing...                                                        "
-echo "*******************************************************************"
-echo -e ${NC}
-
-repo sync
-
-echo -e ${GREEN}
-echo "*******************************************************************"
-echo " Setting up environment...                                         "
-echo "*******************************************************************"
-echo -e ${NC}
-
-MACHINE=arrow-sockit . ./setup-environment
+source poky/oe-init-build-env ./build
 
 echo -e ${GREEN}
 echo "*******************************************************************"
@@ -333,11 +377,25 @@ echo " Updating bblayers.conf...                                         "
 echo "*******************************************************************"
 echo -e ${NC}
 
-# add custom layer to bblayers.conf
-sed --follow-symlinks -i '/meta-96boards/a \ \ \$\{TOPDIR\}\/layers\/meta-arrow-sockit \\' conf/bblayers.conf
+# add custom layers to bblayers.conf
+sed --follow-symlinks -i "/meta-yocto-bsp/a \  \${TOPDIR}/../meta-${BOARD} \\\\" conf/bblayers.conf
+echo "Added meta-${BOARD} layer to bblayers.conf"
+sed --follow-symlinks -i "/meta-yocto-bsp/a \  \${TOPDIR}/../meta-altera \\\\" conf/bblayers.conf
+echo "Added meta-altera layer to bblayers.conf"
 
-# disable meta-photography layer - causing gnome-keyring bitbake error
-sed --follow-symlinks -i '/meta-photography/d' conf/bblayers.conf
+echo -e ${GREEN}
+echo "*******************************************************************"
+echo " Updating local.conf...                                         "
+echo "*******************************************************************"
+echo -e ${NC}
+
+# set default MACHINE to cyclone5
+sed -i 's/MACHINE ??= "qemux86"/MACHINE ??= "cyclone5"/g' conf/local.conf
+
+# set the default kernel version
+sed -i ' /cyclone5/ a\PREFERRED_VERSION_linux-altera-ltsi ?= "4.14.130%"' conf/local.conf
+sed -i ' /cyclone5/ a\PREFERRED_PROVIDER_virtual/kernel ?= "linux-altera-ltsi"' conf/local.conf
+
 
 echo -e ${GREEN}
 echo "*******************************************************************"
@@ -354,7 +412,7 @@ if bitbake $BUILD_IMG ; then
     printf " completed successfully in ${NC}${ELAPSED}${GREEN}\n"
     printf " Output files directory:\n"
     printf "\n"
-    printf " ${BLUE}${PWD}/deploy/glibc/images/arrow-sockit/${GREEN}\n"
+    printf " ${BLUE}${PWD}/deploy/glibc/images/${BOARD}/${GREEN}\n"
     printf "\n"
     printf " If you built a full image (XFCE or console), you can now copy\n"
     printf " the SD card image file to your micro SD Card:\n"
@@ -362,18 +420,27 @@ if bitbake $BUILD_IMG ; then
     printf "     into USB port or SD card reader port on this PC.\n"
     printf "  2. Determine the SD card mount point by entering a command such\n"
     printf "     as ${NC}lsblk${GREEN} at the prompt below.\n"
-    printf "  3. At the prompt, enter the command:\n"
-    printf "     ${NC}sudo dd if=${PWD}/deploy/glibc/images/arrow-sockit/${BUILD_IMG}-arrow-sockit.socfpga-sdimg of=/dev/sd${RED}X${NC} bs=1M && sync${GREEN}\n"
+    printf "  3. At the prompt, enter or copy & paste the command:\n"
+    printf "     ${NC}sudo dd if=${PWD}/deploy/glibc/images/${BOARD}/${BUILD_IMG}-${BOARD}.socfpga-sdimg of=/dev/sd${RED}X${NC} bs=1M && sync${GREEN}\n"
     printf "     where ${NC}sd${RED}X${GREEN} is the mount point determined in step 2.\n"
-    printf "  4. Eject the SD card from this PC, insert into the SoCKit SD\n"
-    printf "     card adapter, and power on the SoCKit.\n"
+    printf "     ${ORANGE}WARNING: using dd incorrectly can result in data loss and \n"
+    printf "     frustration.  Be absolutely certain you specify the correct \n"
+    printf "     mount point determined in step 2 above.${GREEN}\n"
+    printf "  4. When copying is finished and you are returned to the command\n"
+    printf "     prompt, eject the SD card from this PC, insert into the\n"
+    printf "     board's SD card adapter, and power on the board.\n"
     printf "*******************************************************************\n"
     printf "\n"
     echo -e ${NC}
 else
-    echo " It looks like something went wrong with bitbake.  Either you manually"
-    echo " interrupted the build process or perhaps a required build tool is    "
-    echo " still missing that I was not able to detect for your Linux           "
-    echo " distribution.  Please refer to the Yocto Project Reference Manual,   "
-    echo " \"Required Packages for Host Development System\" section.           " 
+    echo -e ${ORANGE}
+    echo "*******************************************************************"
+    echo " It looks like something went wrong with bitbake.  Either you      "
+    echo " manually interrupted the build process or bitbake encountered an  "
+    echo " an error.  Or it is possible that a required build tool is still  "
+    echo " missing that I was not able to detect for your Linux distribution."
+    echo " Please refer to the Yocto Project Reference Manual, \"Required    "
+    echo " Packages for Host Development System\" section.                   "
+    echo "*******************************************************************"
+    echo -e ${NC}
 fi
