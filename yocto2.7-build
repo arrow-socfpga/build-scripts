@@ -162,12 +162,12 @@ check_git_config()
 
 # Configuration variables
 SCRIPT_VERSION="Yocto 2.7 Build Script"
-SHORT_VER=16.1
+SHORT_VER=19.1
 BOARD=arrow-sockit
 BOARD_LONG="Arrow SoCKit Development Kit"
 BUILD_DIR=yocto2.7
 GHRD_BRANCH=
-UBOOT_VER=2017.03
+UBOOT_VER=2019.04
 KERNEL_VER=4.14.130-ltsi
 BUILD_IMG=console
 IMG_SIZE=75
