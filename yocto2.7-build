@@ -390,7 +390,7 @@ echo "*******************************************************************"
 echo -e ${NC}
 
 # set default MACHINE to cyclone5
-sed -i 's/MACHINE ??= "qemux86"/MACHINE ??= "cyclone5"/g' conf/local.conf
+sed -i 's/#MACHINE ?= "qemux86"/MACHINE ?= "cyclone5"/g' conf/local.conf
 
 # set the default kernel version
 sed -i ' /cyclone5/ a\PREFERRED_VERSION_linux-altera-ltsi ?= "4.14.130%"' conf/local.conf
