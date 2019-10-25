@@ -377,6 +377,9 @@ echo " Updating bblayers.conf...                                         "
 echo "*******************************************************************"
 echo -e ${NC}
 
+# if not first run, then delete previously added layers
+sed -i '/${TOPDIR}\/..\/meta-/d' conf/bblayers.conf
+
 # add custom layers to bblayers.conf
 sed --follow-symlinks -i "/meta-yocto-bsp/a \  \${TOPDIR}/../meta-${BOARD} \\\\" conf/bblayers.conf
 echo "Added meta-${BOARD} layer to bblayers.conf"
@@ -389,12 +392,15 @@ echo " Updating local.conf...                                         "
 echo "*******************************************************************"
 echo -e ${NC}
 
-# set default MACHINE to cyclone5
-sed -i 's/#MACHINE ?= "qemux86"/MACHINE ?= "cyclone5"/g' conf/local.conf
+# set default MACHINE to arrow-sockit
+sed -i 's/#MACHINE ?= "qemux86"/MACHINE ?= "arrow-sockit"/g' conf/local.conf
 
 # set the default kernel version
-sed -i ' /cyclone5/ a\PREFERRED_VERSION_linux-altera-ltsi ?= "4.14.130%"' conf/local.conf
-sed -i ' /cyclone5/ a\PREFERRED_PROVIDER_virtual/kernel ?= "linux-altera-ltsi"' conf/local.conf
+sed -i ' /arrow-sockit/ a\PREFERRED_VERSION_linux-altera-ltsi ?= "4.14.130%"' conf/local.conf
+sed -i ' /arrow-sockit/ a\PREFERRED_PROVIDER_virtual/kernel ?= "linux-altera-ltsi"' conf/local.conf
+
+# set the number of threads
+sed -i ' /arrow-sockit/ a\BB_NUMBER_THREADS = "8"' conf/local.conf
 
 
 echo -e ${GREEN}
