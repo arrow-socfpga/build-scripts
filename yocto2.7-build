@@ -45,8 +45,8 @@
 
 usage()
 {
-    echo "Usage: ./yocto2.2-build [options]"
-    echo "Yocto 2.2 build script for"
+    echo "Usage: ./yocto2.7-build [options]"
+    echo "Yocto 2.7 build script for"
     echo "Options:"
     echo "  -b, --board [board name]       Target development board.  Currently supported boards:"
     echo "                                   arrow-sockit"
@@ -56,7 +56,6 @@ usage()
     echo "                                 yocto2.7"
     echo ""
     echo "  -i, --image [image name]       Only these images names are valid:"
-    echo "                                   xfce (XFCE graphical desktop, default if image not specified)"
     echo "                                   console (console applications only)"
     echo "                                   minimal (minimal image only)"
     echo "                                   uboot (builds U-Boot bootloader only)"
@@ -304,7 +303,7 @@ export BB_ENV_EXTRAWHITE="$BB_ENV_EXTRAWHITE IMAGE_ROOTFS_EXTRA_SPACE"
 # print introduction, ask for confirmation
 echo -e ${GREEN}
 printf "*******************************************************************\n"
-printf " This is the Yocto 2.2 build script for the\n"
+printf " This is the Yocto 2.7 build script for the\n"
 printf " ${BOARD_LONG}\n"
 printf " Current build configuration:\n"
 #printf " Run script with --help to view customizable perameters.\n"
