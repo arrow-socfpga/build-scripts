@@ -368,7 +368,7 @@ git clone -b sockit-gsrd-19.1 git://github.com/arrow-socfpga/meta-arrow-sockit.g
 
 # Clone meta-arrow-network-init repo
 
-git clone -b sockit-gsrd-19.1 git://github.com/arrow-socfpga/meta-arrow-network-init.git
+git clone -b gsrd-19.1 git://github.com/arrow-socfpga/meta-arrow-network-init.git
 
 
 echo -e ${GREEN}
