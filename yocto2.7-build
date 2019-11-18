@@ -58,6 +58,7 @@ usage()
     echo "  -i, --image [image name]       Only these images names are valid:"
     echo "                                   xfce (XFCE graphical desktop, default if image not specified)"
     echo "                                   console (console applications only)"
+    echo "                                   minimal (minimal image only)"
     echo "                                   uboot (builds U-Boot bootloader only)"
     echo "                                   kernel (builds linux kernel only)"
     echo ""
@@ -253,6 +254,10 @@ case $BUILD_IMG in
         BUILD_IMG=$BOARD-console-image
         IMG_SIZE=35
     ;;
+    minimal)
+        BUILD_IMG=$BOARD-console-image-minimal
+        IMG_SIZE=20
+    ;;
     uboot)
         BUILD_IMG=virtual/bootloader
         IMG_SIZE=11
@@ -362,6 +367,10 @@ git clone -b master git://github.com/kraj/meta-altera.git
 
 git clone -b sockit-gsrd-19.1 git://github.com/arrow-socfpga/meta-arrow-sockit.git
 
+# Clone meta-arrow-network-init repo
+
+git clone -b sockit-gsrd-19.1 git://github.com/arrow-socfpga/meta-arrow-network-init.git
+
 
 echo -e ${GREEN}
 echo "*******************************************************************"
@@ -383,6 +392,8 @@ sed -i '/${TOPDIR}\/..\/meta-/d' conf/bblayers.conf
 # add custom layers to bblayers.conf
 sed --follow-symlinks -i "/meta-yocto-bsp/a \  \${TOPDIR}/../meta-${BOARD} \\\\" conf/bblayers.conf
 echo "Added meta-${BOARD} layer to bblayers.conf"
+sed --follow-symlinks -i "/meta-yocto-bsp/a \  \${TOPDIR}/../meta-arrow-network-init \\\\" conf/bblayers.conf
+echo "Added meta-arrow-network-init layer to bblayers.conf"
 sed --follow-symlinks -i "/meta-yocto-bsp/a \  \${TOPDIR}/../meta-altera \\\\" conf/bblayers.conf
 echo "Added meta-altera layer to bblayers.conf"
 
@@ -402,6 +413,14 @@ sed -i ' /arrow-sockit/ a\PREFERRED_PROVIDER_virtual/kernel ?= "linux-altera-lts
 # set the number of threads
 sed -i ' /arrow-sockit/ a\BB_NUMBER_THREADS = "8"' conf/local.conf
 
+# enable systemd services
+sed -i ' /arrow-sockit/ a\DISTRO_FEATURES_append = " systemd"' conf/local.conf
+sed -i ' /arrow-sockit/ a\VIRTUAL-RUNTIME_init_manager = "systemd"' conf/local.conf
+sed -i ' /arrow-sockit/ a\DISTRO_FEATURES_BACKFILL_CONSIDERED = "sysvinit"' conf/local.conf
+sed -i ' /arrow-sockit/ a\VIRTUAL-RUNTIME_initscripts = ""' conf/local.conf
+
+# enable dhcp
+#sed -i ' /arrow-sockit/ a\CORE_IMAGE_EXTRA_INSTALL += "dhcp-server dhcp-client"' conf/local.conf
 
 echo -e ${GREEN}
 echo "*******************************************************************"
@@ -427,7 +446,7 @@ if bitbake $BUILD_IMG ; then
     printf "  2. Determine the SD card mount point by entering a command such\n"
     printf "     as ${NC}lsblk${GREEN} at the prompt below.\n"
     printf "  3. At the prompt, enter or copy & paste the command:\n"
-    printf "     ${NC}sudo dd if=${PWD}/deploy/glibc/images/${BOARD}/${BUILD_IMG}-${BOARD}.socfpga-sdimg of=/dev/sd${RED}X${NC} bs=1M && sync${GREEN}\n"
+    printf "     ${NC}sudo dd if=${PWD}/tmp/deploy/images/${BOARD}/${BUILD_IMG}-${BOARD}.wic of=/dev/sd${RED}X${NC} bs=1M && sync${GREEN}\n"
     printf "     where ${NC}sd${RED}X${GREEN} is the mount point determined in step 2.\n"
     printf "     ${ORANGE}WARNING: using dd incorrectly can result in data loss and \n"
     printf "     frustration.  Be absolutely certain you specify the correct \n"
