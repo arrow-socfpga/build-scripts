@@ -2,7 +2,6 @@
 <manifest>
 
   <remove-project name="kraj/meta-altera" />
-  <remove-project name="koenkooi/meta-photography" />
 
   <project remote="github" name="kraj/meta-altera" path="layers/meta-altera" revision="master"/>
   <project remote="github" name="arrow-socfpga/meta-arrow-sockit" path="layers/meta-arrow-sockit" revision="sockit-gsrd-16.1-dev" upstream="master"/>
