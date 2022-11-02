@@ -360,7 +360,7 @@ git clone -b warrior git://git.yoctoproject.org/poky.git
 
 # Clone meta-altera repo
 
-git clone -b master git://github.com/kraj/meta-altera.git
+git clone -b dunfell git://github.com/kraj/meta-altera.git
 
 # Clone meta-arrow-sockit repo
 
